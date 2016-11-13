@@ -60,6 +60,8 @@ def _parse_docstring(obj, process_doc, endpoint=None, verb=None):
     swag_path = getattr(obj, 'swag_path', None)
     swag_type = getattr(obj, 'swag_type', 'yml')
     swag_paths = getattr(obj, 'swag_paths', None)
+    if swag_path is None or swag_type is None:
+        return '','',None
 
     if swag_path is not None:
         full_doc = load_from_file(swag_path, swag_type)
@@ -76,21 +78,32 @@ def _parse_docstring(obj, process_doc, endpoint=None, verb=None):
         if full_doc.startswith('file:'):
             full_doc = load_from_file(*get_path_from_doc(full_doc))
 
-        line_feed = full_doc.find('\n')
-        if line_feed != -1:
-            first_line = process_doc(full_doc[:line_feed])
-            yaml_sep = full_doc[line_feed + 1:].find('---')
-            if yaml_sep != -1:
-                other_lines = process_doc(
-                    full_doc[line_feed + 1: line_feed + yaml_sep]
-                )
-                swag = yaml.load(full_doc[line_feed + yaml_sep:])
-            else:
-                other_lines = process_doc(full_doc[line_feed + 1:])
-        else:
-            first_line = full_doc
+        # line_feed = full_doc.find('\n')
+        # if line_feed != -1:
+        #     first_line = process_doc(full_doc[:line_feed])
+        #     yaml_sep = full_doc[line_feed + 1:].find('---')
+        #     if yaml_sep != -1:
+        #         other_lines = process_doc(
+        #             full_doc[line_feed + 1: line_feed + yaml_sep]
+        #         )
+        #         swag = yaml.load(full_doc[line_feed + yaml_sep:])
+        #     else:
+        #         other_lines = process_doc(full_doc[line_feed + 1:])
+        # else:
+        #     first_line = full_doc
+        try:
+            swag = None
+            if swag_type == 'yml':
+                swag = yaml.load(full_doc)
+            summary = swag.get('summary','')
+            description = swag.get('description','')
+            swag.pop("summary", None)
+            swag.pop("description", None)
+            return summary,description,swag
+        except:
+            return '','',None
 
-    return first_line, other_lines, swag
+    return '', '', None
 
 
 def _extract_definitions(alist, level=None, endpoint=None, verb=None):
@@ -257,6 +270,9 @@ class OutputView(MethodView):
                 klass = method.__dict__.get('view_class', None)
                 if klass and hasattr(klass, 'dispatch_request'):
                     method = klass.__dict__.get('dispatch_request')
+                if verb is None or method is None:
+                    continue
+
                 summary, description, swag = _parse_docstring(
                     method, self.process_doc, endpoint=rule.endpoint, verb=verb
                 )
