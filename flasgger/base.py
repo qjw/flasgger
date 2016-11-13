@@ -7,7 +7,7 @@ we add the endpoint to swagger specification output
 
 """
 import inspect
-import yaml
+import yaml,json
 import re
 import os
 
@@ -35,8 +35,8 @@ def json_to_yaml(content):
 
 
 def load_from_file(swag_path, swag_type='yml'):
-    if swag_type not in ('yaml', 'yml'):
-        raise AttributeError("Currently only yaml or yml supported")
+    if swag_type not in ('yaml', 'yml', 'json'):
+        raise AttributeError("Currently only yaml or yml or json supported")
 
     try:
         return open(swag_path).read()
@@ -95,13 +95,15 @@ def _parse_docstring(obj, process_doc, endpoint=None, verb=None):
             swag = None
             if swag_type == 'yml':
                 swag = yaml.load(full_doc)
+            elif swag_type == 'json':
+                swag = json.loads(full_doc)
             summary = swag.get('summary','')
             description = swag.get('description','')
             swag.pop("summary", None)
             swag.pop("description", None)
             return summary,description,swag
         except:
-            return '','',None
+            return '', '', None
 
     return '', '', None
 

@@ -189,29 +189,96 @@ using yaml or yml extension and following the same pattern.
 
 ### external_file.yml
 ```yaml
-First line is the summary
-All following lines until the hyphens is added to description
-the format of the first lines until 3 hyphens will be not yaml compliant
-but everything below the 3 hyphens should be.
----
+summary: This is the language awesomeness API
+description: Call this api passing a language name and get back its features
 tags:
-  - users
+  - Awesomeness Language API
 parameters:
-  - in: path
-    name: username
+  - name: language
+    in: path
     type: string
     required: true
+    description: The language name
+  - name: size
+    in: query
+    type: integer
+    description: size of awesomeness
 responses:
+  500:
+    description: Error The language is not awesome!
   200:
-    description: A single user item
+    description: A language with its awesomeness
     schema:
-      id: rec_username
+      id: awesome
       properties:
-        username:
+        language:
           type: string
-          description: The name of the user
-          default: 'steve-harris'
+          description: The language name
+          default: Lua
+        features:
+          type: array
+          description: The awesomeness list
+          items:
+            type: string
+          default: ["perfect", "simple", "lovely"]
 
+```
+
+### external_file.json
+
+```json
+{
+    "summary": "This is the language awesomeness API",
+    "description": "Call this api passing a language name and get back its features",
+    "tags": [
+        "Awesomeness Language API"
+    ],
+    "parameters": [
+        {
+            "name": "language",
+            "in": "path",
+            "type": "string",
+            "required": "true",
+            "description": "The language name"
+        },
+        {
+            "name": "size",
+            "in": "query",
+            "type": "integer",
+            "description": "size of awesomeness"
+        }
+    ],
+    "responses": {
+      "500": {
+        "description": "Error The language is not awesome!"
+      },
+      "200": {
+        "description": "A language with its awesomeness",
+        "schema": {
+          "id": "awesome",
+          "properties": {
+            "language": {
+              "type": "string",
+              "description": "The language name",
+              "default": "Lua"
+            },
+            "features": {
+              "type": "array",
+              "description": "The awesomeness list",
+              "items": {
+                "type": "string"
+              },
+              "default": [
+                "perfect",
+                "simple",
+                "lovely"
+              ]
+            }
+          }
+        }
+      }
+    }
+}
 ```
 
 And then use this file as spec to a view
