@@ -9,7 +9,8 @@ we add the endpoint to swagger specification output
 import inspect
 import yaml,json
 import re
-import os
+import os,sys
+import jsonref
 
 from collections import defaultdict
 from flask import jsonify, Blueprint, url_for, current_app, Markup, request
@@ -96,13 +97,13 @@ def _parse_docstring(obj, process_doc, endpoint=None, verb=None):
             if swag_type == 'yml':
                 swag = yaml.load(full_doc)
             elif swag_type == 'json':
-                swag = json.loads(full_doc)
+                swag = jsonref.loads(full_doc,base_uri='file:' + os.path.dirname(sys.modules['__main__'].__file__) + '/')
             summary = swag.get('summary','')
             description = swag.get('description','')
             swag.pop("summary", None)
             swag.pop("description", None)
             return summary,description,swag
-        except:
+        except Exception as e:
             return '', '', None
 
     return '', '', None
