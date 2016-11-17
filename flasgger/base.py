@@ -35,14 +35,17 @@ def json_to_yaml(content):
     return content
 
 
-def load_from_file(swag_path, swag_type='yml'):
+def load_from_file(swag_path, swag_type='yml', root=None):
     if swag_type not in ('yaml', 'yml', 'json'):
         raise AttributeError("Currently only yaml or yml or json supported")
 
     try:
         return open(swag_path).read()
     except IOError:
-        swag_path = os.path.join(os.path.dirname(__file__), swag_path)
+        if root is None:
+            swag_path = os.path.join(os.path.dirname(__file__), swag_path)
+        else:
+            swag_path = os.path.join(root, swag_path)
         return open(swag_path).read()
 
     # TODO:
@@ -54,7 +57,7 @@ def load_from_file(swag_path, swag_type='yml'):
     #         return json_to_yaml(content)
 
 
-def _parse_docstring(obj, process_doc, endpoint=None, verb=None):
+def _parse_docstring(obj, process_doc, endpoint=None, verb=None, root=None):
     first_line, other_lines, swag = None, None, None
 
     full_doc = None
@@ -65,11 +68,11 @@ def _parse_docstring(obj, process_doc, endpoint=None, verb=None):
         return '','',None
 
     if swag_path is not None:
-        full_doc = load_from_file(swag_path, swag_type)
+        full_doc = load_from_file(swag_path, swag_type,root=root)
     elif swag_paths is not None:
         for key in ("{}_{}".format(endpoint, verb), endpoint, verb.lower()):
             if key in swag_paths:
-                full_doc = load_from_file(swag_paths[key], swag_type)
+                full_doc = load_from_file(swag_paths[key], swag_type,root=root)
                 break
     else:
         full_doc = inspect.getdoc(obj)
@@ -208,6 +211,19 @@ class OutputView(MethodView):
         self.spec = view_args.get('spec')
         self.process_doc = view_args.get('sanitizer', BR_SANITIZER)
         self.template = view_args.get('template')
+
+        self.app = view_args.get('app')
+        if self.app is not None:
+            self.doc_root = self.app.root_path
+            swagger_doc_root = self.app.config.get('SWAGGER_DOC_ROOT',None)
+            # 已经设置了变量
+            if swagger_doc_root is not None:
+                # 如果是相对路径，那么加上根目录
+                if not swagger_doc_root.startswith('/'):
+                    self.doc_root = os.path.join(self.doc_root,swagger_doc_root)
+                else:
+                    self.doc_root = swagger_doc_root
+
         super(OutputView, self).__init__(*args, **kwargs)
 
     def get_url_mappings(self, rule_filter=None):
@@ -277,7 +293,7 @@ class OutputView(MethodView):
                     continue
 
                 summary, description, swag = _parse_docstring(
-                    method, self.process_doc, endpoint=rule.endpoint, verb=verb
+                    method, self.process_doc, endpoint=rule.endpoint, verb=verb,root=self.doc_root
                 )
                 # we only add endpoints with swagger data in the docstrings
                 if swag is not None:

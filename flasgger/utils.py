@@ -18,11 +18,11 @@ def swag_from(filepath, filetype=None, endpoint=None, methods=None):
     """
 
     def resolve_path(function, filepath):
-        if not filepath.startswith('/'):
-            if not hasattr(function, 'root_path'):
-                function.root_path = os.path.dirname(
-                    function.__globals__['__file__'])
-            return os.path.join(function.root_path, filepath)
+        # if not filepath.startswith('/'):
+        #     if not hasattr(function, 'root_path'):
+        #         function.root_path = os.path.dirname(
+        #             function.__globals__['__file__'])
+        #     return os.path.join(function.root_path, filepath)
         return filepath
 
     def decorator(function):
