@@ -29,7 +29,29 @@ def swag_from(filepath, filetype=None, endpoint=None, methods=None):
         # function.__code__.co_filename # option to access filename
 
         final_filepath = resolve_path(function, filepath)
-        function.swag_type = filetype or filepath.split('.')[-1]
+
+        if filepath.rfind('#') >= 0:
+            function.swag_subpath = filetype or filepath.split('#')[-1]
+        else:
+            function.swag_subpath = None
+
+        if function.swag_subpath is not None:
+            if not function.swag_subpath.startswith('/'):
+                raise AttributeError("invalid json sub path")
+            # 去掉前面的‘/’
+            function.swag_subpath = function.swag_subpath[1:]
+            # 不支持多级
+            if function.swag_subpath.find('/') >= 0:
+                raise AttributeError("invalid json sub path,only one depth")
+            length = - (len(function.swag_subpath) + 2)
+            final_filepath = final_filepath[0:length]
+
+
+
+        function.swag_type = filetype or final_filepath.split('.')[-1]
+
+        if function.swag_type not in ('yaml', 'yml', 'json'):
+            raise AttributeError("Currently only yaml or yml or json supported")
 
         if endpoint or methods:
             if not hasattr(function, 'swag_paths'):

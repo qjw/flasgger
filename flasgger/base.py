@@ -64,6 +64,7 @@ def _parse_docstring(obj, process_doc, endpoint=None, verb=None, root=None):
     swag_path = getattr(obj, 'swag_path', None)
     swag_type = getattr(obj, 'swag_type', 'yml')
     swag_paths = getattr(obj, 'swag_paths', None)
+    swag_subpath = getattr(obj,'swag_subpath',None)
     if swag_path is None or swag_type is None:
         return '','',None
 
@@ -105,6 +106,9 @@ def _parse_docstring(obj, process_doc, endpoint=None, verb=None, root=None):
                                          base_uri='file:' + os.path.dirname(sys.modules['__main__'].__file__) + '/')
                 else:
                     swag = jsonref.loads(full_doc,base_uri='file:' + root)
+
+            if swag_subpath is not None:
+                swag = swag.get(swag_subpath,None)
 
             summary = swag.get('summary','')
             description = swag.get('description','')
