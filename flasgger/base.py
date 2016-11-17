@@ -100,7 +100,12 @@ def _parse_docstring(obj, process_doc, endpoint=None, verb=None, root=None):
             if swag_type == 'yml':
                 swag = yaml.load(full_doc)
             elif swag_type == 'json':
-                swag = jsonref.loads(full_doc,base_uri='file:' + os.path.dirname(sys.modules['__main__'].__file__) + '/')
+                if root is None:
+                    swag = jsonref.loads(full_doc,
+                                         base_uri='file:' + os.path.dirname(sys.modules['__main__'].__file__) + '/')
+                else:
+                    swag = jsonref.loads(full_doc,base_uri='file:' + root)
+
             summary = swag.get('summary','')
             description = swag.get('description','')
             swag.pop("summary", None)
@@ -223,6 +228,8 @@ class OutputView(MethodView):
                     self.doc_root = os.path.join(self.doc_root,swagger_doc_root)
                 else:
                     self.doc_root = swagger_doc_root
+            if not self.doc_root.endswith('/'):
+                self.doc_root += "/"
 
         super(OutputView, self).__init__(*args, **kwargs)
 
