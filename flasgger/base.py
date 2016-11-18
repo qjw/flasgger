@@ -224,7 +224,7 @@ class OutputView(MethodView):
         self.app = view_args.get('app')
         if self.app is not None:
             self.doc_root = self.app.root_path
-            swagger_doc_root = self.app.config.get('SWAGGER_DOC_ROOT',None)
+            swagger_doc_root = self.config.get('doc_root',None)
             # 已经设置了变量
             if swagger_doc_root is not None:
                 # 如果是相对路径，那么加上根目录
