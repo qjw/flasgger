@@ -21,6 +21,9 @@ NO_SANITIZER = lambda text: text
 BR_SANITIZER = lambda text: text.replace('\n', '<br/>') if text else text
 MK_SANITIZER = lambda text: Markup(markdown(text)) if text else text
 
+swagger_doc_root = None
+doc_enable = True
+validate_enable = True
 
 def get_path_from_doc(full_doc):
     swag_path = full_doc.replace('file:', '').strip()
@@ -48,7 +51,7 @@ def load_from_file(swag_path, swag_type='yml', root=None):
             swag_path = os.path.join(root, swag_path)
         return open(swag_path).read()
 
-    # TODO:
+    # :
     # with open(swag_path) as swag_file:
     #     content = swag_file.read()
     #     if swag_type in ('yaml', 'yml'):
@@ -56,46 +59,27 @@ def load_from_file(swag_path, swag_type='yml', root=None):
     #     elif swag_type  == 'json':
     #         return json_to_yaml(content)
 
-
-def _parse_docstring(obj, process_doc, endpoint=None, verb=None, root=None):
-    first_line, other_lines, swag = None, None, None
-
+def load_docstring(swag_path,swag_type,swag_subpath,root):
     full_doc = None
-    swag_path = getattr(obj, 'swag_path', None)
-    swag_type = getattr(obj, 'swag_type', 'yml')
-    swag_paths = getattr(obj, 'swag_paths', None)
-    swag_subpath = getattr(obj,'swag_subpath',None)
     if swag_path is None or swag_type is None:
-        return '','',None
+        return None
 
     if swag_path is not None:
         full_doc = load_from_file(swag_path, swag_type,root=root)
-    elif swag_paths is not None:
-        for key in ("{}_{}".format(endpoint, verb), endpoint, verb.lower()):
-            if key in swag_paths:
-                full_doc = load_from_file(swag_paths[key], swag_type,root=root)
-                break
+    # elif swag_paths is not None:
+    #     for key in ("{}_{}".format(endpoint, verb), endpoint, verb.lower()):
+    #         if key in swag_paths:
+    #             full_doc = load_from_file(swag_paths[key], swag_type,root=root)
+    #             break
+    # else:
+    #     full_doc = inspect.getdoc(obj)
     else:
-        full_doc = inspect.getdoc(obj)
+        return None
 
     if full_doc:
 
         if full_doc.startswith('file:'):
             full_doc = load_from_file(*get_path_from_doc(full_doc))
-
-        # line_feed = full_doc.find('\n')
-        # if line_feed != -1:
-        #     first_line = process_doc(full_doc[:line_feed])
-        #     yaml_sep = full_doc[line_feed + 1:].find('---')
-        #     if yaml_sep != -1:
-        #         other_lines = process_doc(
-        #             full_doc[line_feed + 1: line_feed + yaml_sep]
-        #         )
-        #         swag = yaml.load(full_doc[line_feed + yaml_sep:])
-        #     else:
-        #         other_lines = process_doc(full_doc[line_feed + 1:])
-        # else:
-        #     first_line = full_doc
         try:
             swag = None
             if swag_type == 'yml':
@@ -110,15 +94,68 @@ def _parse_docstring(obj, process_doc, endpoint=None, verb=None, root=None):
             if swag_subpath is not None:
                 swag = swag.get(swag_subpath,None)
 
-            summary = swag.get('summary','')
-            description = swag.get('description','')
-            swag.pop("summary", None)
-            swag.pop("description", None)
-            return summary,description,swag
+            return swag
         except Exception as e:
-            return '', '', None
+            return None
+    return None
 
-    return '', '', None
+def _parse_docstring(obj, process_doc, endpoint=None, verb=None, root=None):
+    first_line, other_lines, swag = None, None, None
+
+    swag_path = getattr(obj, 'swag_path', None)
+    swag_type = getattr(obj, 'swag_type', 'yml')
+    swag_paths = getattr(obj, 'swag_paths', None)
+    swag_subpath = getattr(obj,'swag_subpath',None)
+
+    swag = load_docstring(swag_path,swag_type,swag_subpath,root)
+    if swag is None:
+        return '','',None
+
+    summary = swag.get('summary', '')
+    description = swag.get('description','')
+    swag.pop("summary", None)
+    swag.pop("description", None)
+    return summary,description,swag
+    #
+    # if swag_path is not None:
+    #     full_doc = load_from_file(swag_path, swag_type,root=root)
+    # elif swag_paths is not None:
+    #     for key in ("{}_{}".format(endpoint, verb), endpoint, verb.lower()):
+    #         if key in swag_paths:
+    #             full_doc = load_from_file(swag_paths[key], swag_type,root=root)
+    #             break
+    # else:
+    #     full_doc = inspect.getdoc(obj)
+    #
+    # if full_doc:
+    #
+    #     if full_doc.startswith('file:'):
+    #         full_doc = load_from_file(*get_path_from_doc(full_doc))
+    #
+    #
+    #     try:
+    #         swag = None
+    #         if swag_type == 'yml':
+    #             swag = yaml.load(full_doc)
+    #         elif swag_type == 'json':
+    #             if root is None:
+    #                 swag = jsonref.loads(full_doc,
+    #                                      base_uri='file:' + os.path.dirname(sys.modules['__main__'].__file__) + '/')
+    #             else:
+    #                 swag = jsonref.loads(full_doc,base_uri='file:' + root)
+    #
+    #         if swag_subpath is not None:
+    #             swag = swag.get(swag_subpath,None)
+    #
+    #         summary = swag.get('summary','')
+    #         description = swag.get('description','')
+    #         swag.pop("summary", None)
+    #         swag.pop("description", None)
+    #         return summary,description,swag
+    #     except Exception as e:
+    #         return '', '', None
+    #
+    # return '', '', None
 
 
 def _extract_definitions(alist, level=None, endpoint=None, verb=None):
@@ -220,20 +257,7 @@ class OutputView(MethodView):
         self.spec = view_args.get('spec')
         self.process_doc = view_args.get('sanitizer', BR_SANITIZER)
         self.template = view_args.get('template')
-
         self.app = view_args.get('app')
-        if self.app is not None:
-            self.doc_root = self.app.root_path
-            swagger_doc_root = self.config.get('doc_root',None)
-            # 已经设置了变量
-            if swagger_doc_root is not None:
-                # 如果是相对路径，那么加上根目录
-                if not swagger_doc_root.startswith('/'):
-                    self.doc_root = os.path.join(self.doc_root,swagger_doc_root)
-                else:
-                    self.doc_root = swagger_doc_root
-            if not self.doc_root.endswith('/'):
-                self.doc_root += "/"
 
         super(OutputView, self).__init__(*args, **kwargs)
 
@@ -304,7 +328,7 @@ class OutputView(MethodView):
                     continue
 
                 summary, description, swag = _parse_docstring(
-                    method, self.process_doc, endpoint=rule.endpoint, verb=verb,root=self.doc_root
+                    method, self.process_doc, endpoint=rule.endpoint, verb=verb,root=swagger_doc_root
                 )
                 # we only add endpoints with swagger data in the docstrings
                 if swag is not None:
@@ -384,11 +408,34 @@ class Swagger(object):
 
     def init_app(self, app):
         self.load_config(app)
-        self.register_views(app)
+        self.load_doc_root(app)
+        if doc_enable:
+            self.register_views(app)
         self.add_headers(app)
 
     def load_config(self, app):
         self.config.update(app.config.get('SWAGGER', {}))
+        global doc_enable
+        global validate_enable
+        doc_enable = self.config.get('doc_enable',True)
+        validate_enable = self.config.get('validate_enable',True)
+
+    def load_doc_root(self,app):
+        if app is not None:
+            doc_root = app.root_path
+            global swagger_doc_root
+            swagger_doc_root = self.config.get('doc_root',None)
+            # 已经设置了变量
+            if swagger_doc_root is not None:
+                # 如果是相对路径，那么加上根目录
+                if not swagger_doc_root.startswith('/'):
+                    doc_root = os.path.join(doc_root,swagger_doc_root)
+                else:
+                    doc_root = swagger_doc_root
+            if not doc_root.endswith('/'):
+                doc_root += "/"
+            swagger_doc_root = doc_root
+
 
     def register_views(self, app):
         blueprint = Blueprint(
