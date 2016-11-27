@@ -16,6 +16,7 @@ from collections import defaultdict
 from flask import jsonify, Blueprint, url_for, current_app, Markup, request
 from flask.views import MethodView
 from mistune import markdown
+from werkzeug.utils import redirect
 
 NO_SANITIZER = lambda text: text
 BR_SANITIZER = lambda text: text.replace('\n', '<br/>') if text else text
@@ -254,7 +255,7 @@ class OutputView(MethodView):
     def __init__(self, *args, **kwargs):
         view_args = kwargs.pop('view_args', {})
         self.config = view_args.get('config')
-        self.spec = view_args.get('spec')
+        self.info = view_args.get('info')
         self.process_doc = view_args.get('sanitizer', BR_SANITIZER)
         self.template = view_args.get('template')
         self.app = view_args.get('app')
@@ -270,15 +271,14 @@ class OutputView(MethodView):
         return app_rules
 
     def get(self):
+        base_url = self.info.get('base_url',None)
         data = {
             "swagger": self.config.get('swagger_version', "2.0"),
+            "basePath": self.info.get('base_url',"/"),
             "info": {
-                "version": self.spec.get('version', "0.0.0"),
-                "title": self.spec.get('title', "A swagger API"),
-                "description": self.spec.get('description',
-                                             "API description"),
-                "termsOfService": self.spec.get('termsOfService',
-                                                "Terms of service"),
+                "version": self.info.get('version', "0.0.0"),
+                "title": self.info.get('title', "A swagger API"),
+                "description": self.info.get('description',"API description")
             },
             "paths": defaultdict(dict),
             "definitions": defaultdict(dict)
@@ -306,7 +306,7 @@ class OutputView(MethodView):
             'deprecated', 'operationId', 'externalDocs'
         ]
 
-        for rule in self.get_url_mappings(self.spec.get('rule_filter')):
+        for rule in self.get_url_mappings(None):
             endpoint = current_app.view_functions[rule.endpoint]
             methods = dict()
             for verb in rule.methods.difference(ignore_verbs):
@@ -372,6 +372,8 @@ class OutputView(MethodView):
 
             if len(operations):
                 rule = str(rule)
+                if base_url is not None and rule.startswith(base_url):
+                    rule = rule[len(base_url):]
                 # old regex '(<(.*?\:)?(.*?)>)'
                 for arg in re.findall('(<([^<>]*:)?([^<>]*)>)', rule):
                     rule = rule.replace(arg[0], '{%s}' % arg[2])
@@ -384,18 +386,13 @@ class Swagger(object):
     DEFAULT_CONFIG = {
         "headers": [
         ],
-        "specs": [
+        "info":
             {
                 "version": "1.0.1",
                 "title": "A swagger API",
-                "endpoint": 'spec',
-                "route": '/spec',
-                "rule_filter": lambda rule: True  # all in
-            }
-        ],
-        "static_url_path": "/apidocs",
-        "static_folder": "swaggerui",
-        "specs_route": "/specs"
+                "description": "swagger document"
+            },
+        "url_prefix": "doc"
     }
 
     def __init__(self, app=None, config=None, sanitizer=None, template=None):
@@ -403,6 +400,10 @@ class Swagger(object):
         self.sanitizer = sanitizer or BR_SANITIZER
         self.config = config or self.DEFAULT_CONFIG.copy()
         self.template = template
+        self.swagger_static_url = 'apidocs'
+        self.swagger_endpoint = 'swagger'
+        self.swagger_static_folder = 'swaggerui'
+        self.swagger_spec_url = 'spec'
         if app:
             self.init_app(app)
 
@@ -439,39 +440,32 @@ class Swagger(object):
 
     def register_views(self, app):
         blueprint = Blueprint(
-            self.config.get('endpoint', 'swagger'),
+            self.swagger_endpoint,
             __name__,
-            url_prefix=self.config.get('url_prefix', None),
-            subdomain=self.config.get('subdomain', None),
-            template_folder=self.config.get('template_folder', 'templates'),
-            static_folder=self.config.get('static_folder', 'static'),
-            static_url_path=self.config.get('static_url_path', None)
+            static_folder=self.swagger_static_folder,
+            static_url_path= '/' + self.swagger_static_url
         )
-        for spec in self.config['specs']:
-            self.endpoints.append(spec['endpoint'])
-            blueprint.add_url_rule(
-                spec['route'],
-                spec['endpoint'],
-                view_func=OutputView().as_view(
-                    spec['endpoint'],
-                    view_args=dict(
-                        app=app, config=self.config,
-                        spec=spec, sanitizer=self.sanitizer,
-                        template=self.template
-                    )
-                )
-            )
+
+        @blueprint.route("/")
+        def api_index():
+            url = url_for(self.swagger_endpoint + '.api_index')
+            return redirect(url + self.swagger_static_url + '/index.html?url=' + url + self.swagger_spec_url)
 
         blueprint.add_url_rule(
-            self.config.get('specs_route', '/specs'),
-            'specs',
-            view_func=SpecsView().as_view(
-                'specs',
-                view_args=dict(config=self.config)
+            '/' + self.swagger_spec_url,
+            self.swagger_spec_url,
+            view_func=OutputView().as_view(
+                self.swagger_endpoint,
+                view_args=dict(
+                    app=app, config=self.config,
+                    info=self.config['info'],
+                    sanitizer=self.sanitizer,
+                    template=self.template
+                )
             )
         )
 
-        app.register_blueprint(blueprint)
+        app.register_blueprint(blueprint,url_prefix='/' + self.config.get('url_prefix', None))
 
     def add_headers(self, app):
         @app.after_request
