@@ -4,7 +4,7 @@
  * @link http://swagger.io
  * @license Apache-2.0
  */
-(function(){/* jshint ignore:start */ 
+(function(){/* jshint ignore:start */
  {(function() {
   var template = Handlebars.template, templates = Handlebars.templates = Handlebars.templates || {};
 templates['apikey_auth'] = template({"1":function(container,depth0,helpers,partials,data) {
@@ -312,7 +312,7 @@ templates['operation'] = template({"1":function(container,depth0,helpers,partial
   return "  <ul class='operations' >\n    <li class='"
     + ((stack1 = (helpers.escape || (depth0 && depth0.escape) || alias2).call(alias1,(depth0 != null ? depth0.method : depth0),{"name":"escape","hash":{},"data":data})) != null ? stack1 : "")
     + " operation' id='"
-    + ((stack1 = (helpers.escape || (depth0 && depth0.escape) || alias2).call(alias1,(depth0 != null ? depth0.parentId : depth0),{"name":"escape","hash":{},"data":data})) != null ? stack1 : "")
+    + ((stack1 = (helpers.escape || (depth0 && depth0.escape) || alias2).call(alias1,(depth0 != null ? depth0.encodedParentId : depth0),{"name":"escape","hash":{},"data":data})) != null ? stack1 : "")
     + "_"
     + ((stack1 = (helpers.escape || (depth0 && depth0.escape) || alias2).call(alias1,(depth0 != null ? depth0.nickname : depth0),{"name":"escape","hash":{},"data":data})) != null ? stack1 : "")
     + "'>\n      <div class='heading'>\n        <h3>\n          <span class='http_method'>\n          <a href='#!/"
@@ -658,11 +658,11 @@ templates['resource'] = template({"1":function(container,depth0,helpers,partials
     + ((stack1 = (helpers.sanitize || (depth0 && depth0.sanitize) || helpers.helperMissing).call(depth0 != null ? depth0 : {},(depth0 != null ? depth0.url : depth0),{"name":"sanitize","hash":{},"data":data})) != null ? stack1 : "")
     + "' data-sw-translate>Raw</a>\n    </li>\n";
 },"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data) {
-    var stack1, helper, options, alias1=depth0 != null ? depth0 : {}, alias2=helpers.helperMissing, buffer = 
+    var stack1, helper, options, alias1=depth0 != null ? depth0 : {}, alias2=helpers.helperMissing, buffer =
   "<div class='heading'>\n  <h2>\n    <a href='#!/"
-    + ((stack1 = (helpers.sanitize || (depth0 && depth0.sanitize) || alias2).call(alias1,(depth0 != null ? depth0.id : depth0),{"name":"sanitize","hash":{},"data":data})) != null ? stack1 : "")
+    + ((stack1 = (helpers.sanitize || (depth0 && depth0.sanitize) || alias2).call(alias1,(depth0 != null ? depth0.encodedParentId : depth0),{"name":"sanitize","hash":{},"data":data})) != null ? stack1 : "")
     + "' class=\"toggleEndpointList\" data-id=\""
-    + ((stack1 = (helpers.sanitize || (depth0 && depth0.sanitize) || alias2).call(alias1,(depth0 != null ? depth0.id : depth0),{"name":"sanitize","hash":{},"data":data})) != null ? stack1 : "")
+    + ((stack1 = (helpers.sanitize || (depth0 && depth0.sanitize) || alias2).call(alias1,(depth0 != null ? depth0.encodedParentId : depth0),{"name":"sanitize","hash":{},"data":data})) != null ? stack1 : "")
     + "\">"
     + ((stack1 = (helpers.sanitize || (depth0 && depth0.sanitize) || alias2).call(alias1,(depth0 != null ? depth0.name : depth0),{"name":"sanitize","hash":{},"data":data})) != null ? stack1 : "")
     + "</a> ";
@@ -671,19 +671,19 @@ templates['resource'] = template({"1":function(container,depth0,helpers,partials
   if (stack1 != null) { buffer += stack1; }
   return buffer + ((stack1 = (helpers.sanitize || (depth0 && depth0.sanitize) || alias2).call(alias1,(depth0 != null ? depth0.summary : depth0),{"name":"sanitize","hash":{},"data":data})) != null ? stack1 : "")
     + "\n  </h2>\n  <ul class='options'>\n    <li>\n      <a href='#!/"
-    + ((stack1 = (helpers.sanitize || (depth0 && depth0.sanitize) || alias2).call(alias1,(depth0 != null ? depth0.id : depth0),{"name":"sanitize","hash":{},"data":data})) != null ? stack1 : "")
+    + ((stack1 = (helpers.sanitize || (depth0 && depth0.sanitize) || alias2).call(alias1,(depth0 != null ? depth0.encodedParentId : depth0),{"name":"sanitize","hash":{},"data":data})) != null ? stack1 : "")
     + "' id='endpointListTogger_"
-    + ((stack1 = (helpers.sanitize || (depth0 && depth0.sanitize) || alias2).call(alias1,(depth0 != null ? depth0.id : depth0),{"name":"sanitize","hash":{},"data":data})) != null ? stack1 : "")
+    + ((stack1 = (helpers.sanitize || (depth0 && depth0.sanitize) || alias2).call(alias1,(depth0 != null ? depth0.encodedParentId : depth0),{"name":"sanitize","hash":{},"data":data})) != null ? stack1 : "")
     + "' class=\"toggleEndpointList\" data-id=\""
-    + ((stack1 = (helpers.sanitize || (depth0 && depth0.sanitize) || alias2).call(alias1,(depth0 != null ? depth0.id : depth0),{"name":"sanitize","hash":{},"data":data})) != null ? stack1 : "")
+    + ((stack1 = (helpers.sanitize || (depth0 && depth0.sanitize) || alias2).call(alias1,(depth0 != null ? depth0.encodedParentId : depth0),{"name":"sanitize","hash":{},"data":data})) != null ? stack1 : "")
     + "\" data-sw-translate>Show/Hide</a>\n    </li>\n    <li>\n      <a href='#' class=\"collapseResource\" data-id=\""
-    + ((stack1 = (helpers.sanitize || (depth0 && depth0.sanitize) || alias2).call(alias1,(depth0 != null ? depth0.id : depth0),{"name":"sanitize","hash":{},"data":data})) != null ? stack1 : "")
+    + ((stack1 = (helpers.sanitize || (depth0 && depth0.sanitize) || alias2).call(alias1,(depth0 != null ? depth0.encodedParentId : depth0),{"name":"sanitize","hash":{},"data":data})) != null ? stack1 : "")
     + "\" data-sw-translate>\n        List Operations\n      </a>\n    </li>\n    <li>\n      <a href='#' class=\"expandResource\" data-id=\""
-    + ((stack1 = (helpers.sanitize || (depth0 && depth0.sanitize) || alias2).call(alias1,(depth0 != null ? depth0.id : depth0),{"name":"sanitize","hash":{},"data":data})) != null ? stack1 : "")
+    + ((stack1 = (helpers.sanitize || (depth0 && depth0.sanitize) || alias2).call(alias1,(depth0 != null ? depth0.encodedParentId : depth0),{"name":"sanitize","hash":{},"data":data})) != null ? stack1 : "")
     + "\" data-sw-translate>\n        Expand Operations\n      </a>\n    </li>\n"
     + ((stack1 = helpers["if"].call(alias1,(depth0 != null ? depth0.url : depth0),{"name":"if","hash":{},"fn":container.program(3, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
     + "  </ul>\n</div>\n<ul class='endpoints' id='"
-    + ((stack1 = (helpers.sanitize || (depth0 && depth0.sanitize) || alias2).call(alias1,(depth0 != null ? depth0.id : depth0),{"name":"sanitize","hash":{},"data":data})) != null ? stack1 : "")
+    + ((stack1 = (helpers.sanitize || (depth0 && depth0.sanitize) || alias2).call(alias1,(depth0 != null ? depth0.encodedParentId : depth0),{"name":"sanitize","hash":{},"data":data})) != null ? stack1 : "")
     + "_endpoint_list' style='display:none'>\n\n</ul>\n";
 },"useData":true});
 templates['response_content_type'] = template({"1":function(container,depth0,helpers,partials,data) {
@@ -770,7 +770,7 @@ templates['status_code'] = template({"1":function(container,depth0,helpers,parti
     + ((stack1 = helpers.each.call(alias1,(depth0 != null ? depth0.headers : depth0),{"name":"each","hash":{},"fn":container.program(1, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
     + "    </tbody>\n  </table>\n</td>";
 },"useData":true});
-})();} 
+})();}
  /* jshint ignore:end */
 'use strict';
 
@@ -886,8 +886,7 @@ window.Docs = {
             var li_dom_id = fragments.join('_');
             var li_content_dom_id = li_dom_id + "_content";
 
-
-            Docs.expandOperation($('#'+li_content_dom_id));
+            Docs.expandOperation($('#'+Docs.escapeResourceName(li_content_dom_id)));
             $('#'+li_dom_id).slideto({highlight: false});
             break;
 		}
@@ -3757,7 +3756,7 @@ SwaggerClient.prototype.buildFromSpec = function (response) {
   }
 
   // get paths, create functions for each operationId
-  
+
   // Bind help to 'client.apis'
   self.apis.help = _.bind(self.help, self);
 
@@ -22730,6 +22729,7 @@ SwaggerUi.Views.MainView = Backbone.View.extend({
         counter += 1;
       }
       resource.id = sanitizeHtml(id);
+      resource.encodedParentId = encodeURI(resource.id);
       resources[id] = resource;
       this.addResource(resource, this.model.auths);
     }
@@ -22744,7 +22744,7 @@ SwaggerUi.Views.MainView = Backbone.View.extend({
 
   addResource: function(resource, auths){
     // Render a resource and add it to resources li
-    resource.id = resource.id.replace(/\s/g, '_');
+    // resource.id = resource.id.replace(/\s/g, '_');
 
     // Make all definitions available at the root of the resource so that they can
     // be loaded by the JSonEditor
@@ -22754,7 +22754,7 @@ SwaggerUi.Views.MainView = Backbone.View.extend({
       model: resource,
       router: this.router,
       tagName: 'li',
-      id: 'resource_' + resource.id,
+      id: 'resource_' + resource.encodedParentId,
       className: 'resource',
       auths: auths,
       swaggerOptions: this.options.swaggerOptions
@@ -23664,7 +23664,7 @@ SwaggerUi.Views.OperationView = Backbone.View.extend({
   },
 
   toggleOperationContent: function (event) {
-    var elem = $('#' + Docs.escapeResourceName(this.parentId + '_' + this.nickname + '_content'));
+    var elem = $('#' + Docs.escapeResourceName(encodeURI(this.parentId) + '_' + this.nickname + '_content'));
     if (elem.is(':visible')){
       $.bbq.pushState('#/', 2);
       event.preventDefault();
