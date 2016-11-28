@@ -38,8 +38,8 @@ def swag_from(filepath, filetype=None, endpoint=None, methods=None,validate_flag
         swag_param_query_required = []
         swag_param_path = {}
         swag_param_path_required = []
-        # swag_param_formdata = {}
-        # swag_param_formdata_required = []
+        swag_param_formdata = {}
+        swag_param_formdata_required = []
 
         for item in swag:
             if type(item) != dict:
@@ -77,17 +77,17 @@ def swag_from(filepath, filetype=None, endpoint=None, methods=None,validate_flag
                 swag_param_path[item_name] = item
                 if required:
                     swag_param_path_required.append(item_name)
-            # elif item_type == 'formData':
-            #     required = item.get('required',False)
-            #     if not isinstance(required,bool):
-            #         continue
-            #
-            #     item.pop('in',None)
-            #     item.pop('name',None)
-            #     item.pop('required',None)
-            #     swag_param_formdata[item_name] = item
-            #     if required:
-            #         swag_param_formdata_required.append(item_name)
+            elif item_type == 'formData':
+                required = item.get('required',False)
+                if not isinstance(required,bool):
+                    continue
+
+                item.pop('in',None)
+                item.pop('name',None)
+                item.pop('required',None)
+                swag_param_formdata[item_name] = item
+                if required:
+                    swag_param_formdata_required.append(item_name)
 
         if swag_param_query:
             function.swag_param_query = {
@@ -103,12 +103,12 @@ def swag_from(filepath, filetype=None, endpoint=None, methods=None,validate_flag
                 'type':'object'
             }
 
-        # if swag_param_formdata:
-        #     function.swag_param_formdata = {
-        #         'properties': swag_param_formdata,
-        #         'required': swag_param_formdata_required,
-        #         'type':'object'
-        #     }
+        if swag_param_formdata:
+            function.swag_param_formdata = {
+                'properties': swag_param_formdata,
+                'required': swag_param_formdata_required,
+                'type':'object'
+            }
 
     def translate_string_data(schema,data):
         if not isinstance(data,ImmutableMultiDict):
@@ -215,13 +215,13 @@ def swag_from(filepath, filetype=None, endpoint=None, methods=None,validate_flag
             if swag_param_path is not None:
                 _validate(request.view_args, swag_param_path, format_checker=FormatChecker())
 
-            # swag_param_formdata = getattr(function, 'swag_param_formdata', None)
-            # if swag_param_formdata is not None:
-            #     data = translate_string_data(swag_param_formdata,request.form)
-            #     if data is None:
-            #         abort(500)
-            #     request.query_dict = data
-            #     _validate(data, swag_param_query, format_checker=FormatChecker())
+            swag_param_formdata = getattr(function, 'swag_param_formdata', None)
+            if swag_param_formdata is not None:
+                data = translate_string_data(swag_param_formdata,request.form)
+                if data is None:
+                    abort(500)
+                request.form_dict = data
+                _validate(data, swag_param_formdata, format_checker=FormatChecker())
 
             return function(*args, **kwargs)
         return wrapper

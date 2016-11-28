@@ -271,10 +271,10 @@ class OutputView(MethodView):
         return app_rules
 
     def get(self):
-        base_url = self.info.get('base_url',None)
+        base_url = self.config.get('base_url',None)
         data = {
             "swagger": self.config.get('swagger_version', "2.0"),
-            "basePath": self.info.get('base_url',"/"),
+            "basePath": self.config.get('base_url',"/"),
             "info": {
                 "version": self.info.get('version', "0.0.0"),
                 "title": self.info.get('title', "A swagger API"),
