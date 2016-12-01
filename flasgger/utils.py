@@ -89,26 +89,29 @@ def swag_from(filepath, filetype=None, endpoint=None, methods=None,validate_flag
                 if required:
                     swag_param_formdata_required.append(item_name)
 
-        if swag_param_query:
+        if swag_param_query and len(swag_param_query) > 0:
             function.swag_param_query = {
                 'properties' : swag_param_query,
-                'required':swag_param_query_required,
                 'type':'object'
             }
+            if len(swag_param_query_required) > 0:
+                function.swag_param_query['required'] = swag_param_query_required
 
-        if swag_param_path:
+        if swag_param_path and len(swag_param_path) > 0:
             function.swag_param_path = {
                 'properties': swag_param_path,
-                'required': swag_param_path_required,
                 'type':'object'
             }
+            if len(swag_param_path_required) > 0:
+                function.swag_param_path['required'] = swag_param_path_required
 
-        if swag_param_formdata:
+        if swag_param_formdata and len(swag_param_formdata) > 0:
             function.swag_param_formdata = {
                 'properties': swag_param_formdata,
-                'required': swag_param_formdata_required,
                 'type':'object'
             }
+            if len(swag_param_formdata_required) > 0:
+                function.swag_param_formdata['required'] = swag_param_formdata_required
 
     def translate_string_data(schema,data):
         if not isinstance(data,ImmutableMultiDict):
