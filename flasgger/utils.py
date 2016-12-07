@@ -29,6 +29,7 @@ def swag_from(filepath, filetype=None, endpoint=None, methods=None,validate_flag
         return filepath
 
     def load_validate_schema(function,schema):
+        swag = None
         if schema is not None:
             swag = schema.get('parameters', None)
         if swag is None or type(swag) != list:
@@ -127,20 +128,30 @@ def swag_from(filepath, filetype=None, endpoint=None, methods=None,validate_flag
             type = property.get('type',None)
             if type is None:
                 abort(500)
-            if type != 'integer':
-                continue
-            value = rdict.get(name,None)
-            if value is None or isinstance(value, int):
-                continue
+            if type == 'integer':
+                value = rdict.get(name,None)
+                if value is None or isinstance(value, int):
+                    continue
 
-            # 尝试转成int，若失败，则肯定校验不过，直接return
-            try:
-                value_int = int(value)
-                rdict[name] = value_int
-            except TypeError as te:
-                return rdict
-            except ValueError as ve:
-                return rdict
+                # 尝试转成int，若失败，则肯定校验不过，直接return
+                try:
+                    value_int = int(value)
+                    rdict[name] = value_int
+                except TypeError as te:
+                    return rdict
+                except ValueError as ve:
+                    return rdict
+            elif type == 'number':
+                value = rdict.get(name, None)
+                if value is None or isinstance(value, float):
+                    continue
+                try:
+                    value_float = float(value)
+                    rdict[name] = value_float
+                except TypeError as te:
+                    return rdict
+                except ValueError as ve:
+                    return rdict
 
         return rdict
 
@@ -207,6 +218,7 @@ def swag_from(filepath, filetype=None, endpoint=None, methods=None,validate_flag
                 _validate(request.json, swag_param_body, format_checker=FormatChecker())
 
             swag_param_query = getattr(function, 'swag_param_query', None)
+            request.query_dict = {}
             if swag_param_query is not None:
                 data = translate_string_data(swag_param_query,request.args)
                 if data is None:
@@ -219,6 +231,7 @@ def swag_from(filepath, filetype=None, endpoint=None, methods=None,validate_flag
                 _validate(request.view_args, swag_param_path, format_checker=FormatChecker())
 
             swag_param_formdata = getattr(function, 'swag_param_formdata', None)
+            request.form_dict = {}
             if swag_param_formdata is not None:
                 data = translate_string_data(swag_param_formdata,request.form)
                 if data is None:
