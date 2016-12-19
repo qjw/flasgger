@@ -238,8 +238,9 @@ SWAGGER = {
 
 ## 其他
 在flask中，query参数和form参数中所有的value都是string类型，若doc声明类型为[integer],flasgger内部会自动转换成int。最终的结果存放在
+
 1. json - request.json
-2. formData - request.form_dict
+2. formData/form - request.form_dict
 3. query - request.query_dict
 4. path - request.view_args
 
@@ -275,4 +276,39 @@ swag_from注解可以关联一个文件，或者文件的某一个key。但是�
 }
 ```
 
+# 自定义错误提示
 
+```json
+{
+    "in": "body",
+    "name":"body",
+    "description": "需要修改的内容",
+    "required": true,
+    "schema": {
+        "type": "object",
+        "properties": {
+            "description": {
+                "type": "string",
+                "description": "需要修改的内容",
+                "maxLength": 140,
+                "error_tip": "限140字"
+            }
+        },
+        "required":[
+            "description"
+        ]
+    }
+}
+```
+
+错误处理
+
+```python
+@app.errorhandler(jsonschema.ValidationError)
+def handle_bad_request(e):
+    flash(e.schema.get('error_tip',e.message))
+    redirect_url = e.schema.get('redirect_url',None)
+    if redirect_url is not None:
+        return redirect(url_for(redirect_url))
+    return make_response(jsonify(code=400, message=e.schema.get('error_tip','参数校验错误'),details=e.message), 200)
+```

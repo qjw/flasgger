@@ -152,6 +152,10 @@ def swag_from(filepath, filetype=None, endpoint=None, methods=None,validate_flag
                     return rdict
                 except ValueError as ve:
                     return rdict
+            elif type == 'string':
+                value = rdict.get(name, None)
+                if value == '' :
+                    rdict.pop(name, None)
 
         return rdict
 
@@ -210,12 +214,24 @@ def swag_from(filepath, filetype=None, endpoint=None, methods=None,validate_flag
                                   swagger_doc_root)
             load_validate_schema(function,swag)
 
+        def stripNone(data):
+            if isinstance(data, dict):
+                return {k: stripNone(v) for k, v in data.items() if k is not None and v != '__null__'}
+            elif isinstance(data, list):
+                return [stripNone(item) for item in data if item is not None]
+            elif isinstance(data, tuple):
+                return tuple(stripNone(item) for item in data if item is not None)
+            elif isinstance(data, set):
+                return {stripNone(item) for item in data if item is not None}
+            else:
+                return data
 
         @wraps(function)
         def wrapper(*args, **kwargs):
             swag_param_body = getattr(function, 'swag_param_body', None)
             if swag_param_body is not None:
-                _validate(request.json, swag_param_body, format_checker=FormatChecker())
+                request.json_dict = stripNone(request.json)
+                _validate(request.json_dict, swag_param_body, format_checker=FormatChecker())
 
             swag_param_query = getattr(function, 'swag_param_query', None)
             request.query_dict = {}
