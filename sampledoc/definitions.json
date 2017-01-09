@@ -1,0 +1,32 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "car_model": {
+        "description": "车辆型号",
+        "type": "object",
+        "properties": {
+            "brand": {
+                "type": "string",
+                "description": "汽车品牌"
+            },
+            "series": {
+                "type": "string",
+                "description": "汽车系列"
+            },
+            "model": {
+                "type": "string",
+                "description": "汽车型号"
+            },
+            "model_id": {
+                "type": "integer",
+                "description": "汽车型号_id"
+            },
+            "image_url": {
+                "type": "string",
+                "description": "汽车logo"
+            }
+        },
+        "required": [
+            "model_id"
+        ]
+    }
+}

@@ -1,0 +1,18 @@
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<html><head>
+<title>text
+</title>
+</head>
+<script>
+</script>
+<body>
+<div style="padding-left: 18px;">
+    {% with messages = get_flashed_messages() %}
+    <div class="alert alert-danger" role="alert"
+         style="{%if not messages|first %}display:none;{% endif %}">
+        <span>{{ messages|first }}</span>
+    </div>
+    {% endwith %}
+</div>
+</body>
+</html>
