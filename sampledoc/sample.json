@@ -28,7 +28,8 @@
                 "mobile": {
                     "type": "string",
                     "description": "手机号码",
-                    "pattern":"^1[0-9]{10}$"
+                    "customvalidator": "mobile",
+                    "error_tip":"请输入正确的客户手机1"
                 },
                 "verification_code": {
                     "type": "string",
@@ -125,6 +126,51 @@
                         "contact"
                     ]
                 }
+            }
+        ],
+        "responses": {
+            "200": {
+                "schema": {
+                    "properties": {
+                        "code": {
+                            "type": "integer",
+                            "description": "返回码",
+                            "default": 0
+                        },
+                        "message": {
+                            "type": "string",
+                            "description": "返回字符串描述",
+                            "default": "ok"
+                        },
+                        "data": {
+                            "type": "object",
+                            "properties": {
+                                "default": {
+                                    "type": "boolean",
+                                    "description": "是否已设置默认"
+                                },
+                                "contact": {
+                                    "$ref": "file:definitions.json#/car_model"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "4": {
+        "summary": "更新11",
+        "tags": [
+            "我的 - fasdf"
+        ],
+        "parameters": [
+            {
+                "name": "id",
+                "in": "formData",
+                "type": "integer",
+                "description": "ID",
+                "required": true
             }
         ],
         "responses": {

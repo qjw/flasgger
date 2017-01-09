@@ -15,6 +15,7 @@ import jsonref
 from collections import defaultdict
 from flask import jsonify, Blueprint, url_for, current_app, Markup, request
 from flask.views import MethodView
+from jsonschema import ValidationError
 from mistune import markdown
 from werkzeug.utils import redirect
 
@@ -25,6 +26,7 @@ MK_SANITIZER = lambda text: Markup(markdown(text)) if text else text
 swagger_doc_root = None
 doc_enable = True
 validate_enable = True
+custom_validators = None
 
 def get_path_from_doc(full_doc):
     swag_path = full_doc.replace('file:', '').strip()
@@ -381,6 +383,18 @@ class OutputView(MethodView):
         return jsonify(data)
 
 
+def customValidatorDispatch(validator, value, instance, schema):
+    global custom_validators
+    if custom_validators is None: return
+
+    if value not in custom_validators:
+        err = '{} is unknown, we only know about: {}'
+        yield ValidationError(err.format(value, ', '.join(custom_validators.keys())))
+    else:
+        errors = custom_validators[value](validator, value, instance, schema)
+        for error in errors:
+            yield error
+
 class Swagger(object):
 
     DEFAULT_CONFIG = {
@@ -418,8 +432,10 @@ class Swagger(object):
         self.config.update(app.config.get('SWAGGER', {}))
         global doc_enable
         global validate_enable
+        global custom_validators
         doc_enable = self.config.get('doc_enable',True)
         validate_enable = self.config.get('validate_enable',True)
+        custom_validators = self.config.get('custom_validators',None)
 
     def load_doc_root(self,app):
         if app is not None:

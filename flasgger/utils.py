@@ -4,10 +4,13 @@ import os
 import jsonschema
 from flask import request,abort
 from functools import wraps
+
+from jsonschema import Draft4Validator
 from jsonschema import ValidationError, validate as _validate
+from jsonschema.validators import extend
 from werkzeug.datastructures import ImmutableMultiDict
 
-from .base import _extract_definitions, yaml, load_from_file,load_docstring
+from .base import _extract_definitions, yaml, load_from_file,load_docstring, customValidatorDispatch
 from jsonschema import FormatChecker
 
 
@@ -226,12 +229,26 @@ def swag_from(filepath, filetype=None, endpoint=None, methods=None,validate_flag
             else:
                 return data
 
+
         @wraps(function)
         def wrapper(*args, **kwargs):
+            validate_instance = getattr(function, 'validate_instance', None)
+            if validate_instance is None:
+                customValidator = extend(Draft4Validator, {'customvalidator': customValidatorDispatch}, 'FlasggerSchema')
+                function.validate_instance = customValidator
+                validate_instance = customValidator
+
             swag_param_body = getattr(function, 'swag_param_body', None)
             if swag_param_body is not None:
                 request.json_dict = stripNone(request.json)
-                _validate(request.json_dict, swag_param_body, format_checker=FormatChecker())
+                # _validate(request.json_dict, swag_param_body, format_checker=FormatChecker())
+                validate_instance(swag_param_body, format_checker=FormatChecker()).validate(request.json_dict)
+
+                # http://stackoverflow.com/questions/17404348/simple-python-validation-library-which-reports-all-validation-errors-instead-of
+                # validator = customValidator(schema)
+                # errors = [e for e in validator.iter_errors(input_dict)]
+                # if len(errors):
+                #     return errors
 
             swag_param_query = getattr(function, 'swag_param_query', None)
             request.query_dict = {}
@@ -240,11 +257,13 @@ def swag_from(filepath, filetype=None, endpoint=None, methods=None,validate_flag
                 if data is None:
                     abort(500)
                 request.query_dict = data
-                _validate(data, swag_param_query, format_checker=FormatChecker())
+                # _validate(data, swag_param_query, format_checker=FormatChecker())
+                validate_instance(swag_param_query, format_checker=FormatChecker()).validate(data)
 
             swag_param_path = getattr(function, 'swag_param_path', None)
             if swag_param_path is not None:
-                _validate(request.view_args, swag_param_path, format_checker=FormatChecker())
+                # _validate(request.view_args, swag_param_path, format_checker=FormatChecker())
+                validate_instance(swag_param_path, format_checker=FormatChecker()).validate(request.view_args)
 
             swag_param_formdata = getattr(function, 'swag_param_formdata', None)
             request.form_dict = {}
@@ -253,7 +272,8 @@ def swag_from(filepath, filetype=None, endpoint=None, methods=None,validate_flag
                 if data is None:
                     abort(500)
                 request.form_dict = data
-                _validate(data, swag_param_formdata, format_checker=FormatChecker())
+                # _validate(data, swag_param_formdata, format_checker=FormatChecker())
+                validate_instance(swag_param_formdata, format_checker=FormatChecker()).validate(data)
 
             return function(*args, **kwargs)
         return wrapper
