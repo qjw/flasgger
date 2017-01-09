@@ -10,7 +10,7 @@ from jsonschema import ValidationError, validate as _validate
 from jsonschema.validators import extend
 from werkzeug.datastructures import ImmutableMultiDict
 
-from .base import _extract_definitions, yaml, load_from_file,load_docstring, customValidatorDispatch
+from .base import _extract_definitions, yaml, load_from_file,load_docstring, customValidatorDispatch, stripNone
 from jsonschema import FormatChecker
 
 
@@ -217,17 +217,7 @@ def swag_from(filepath, filetype=None, endpoint=None, methods=None,validate_flag
                                   swagger_doc_root)
             load_validate_schema(function,swag)
 
-        def stripNone(data):
-            if isinstance(data, dict):
-                return {k: stripNone(v) for k, v in data.items() if k is not None and v != '__null__'}
-            elif isinstance(data, list):
-                return [stripNone(item) for item in data if item is not None]
-            elif isinstance(data, tuple):
-                return tuple(stripNone(item) for item in data if item is not None)
-            elif isinstance(data, set):
-                return {stripNone(item) for item in data if item is not None}
-            else:
-                return data
+
 
 
         @wraps(function)
@@ -241,6 +231,7 @@ def swag_from(filepath, filetype=None, endpoint=None, methods=None,validate_flag
             swag_param_body = getattr(function, 'swag_param_body', None)
             if swag_param_body is not None:
                 request.json_dict = stripNone(request.json)
+
                 # _validate(request.json_dict, swag_param_body, format_checker=FormatChecker())
                 validate_instance(swag_param_body, format_checker=FormatChecker()).validate(request.json_dict)
 

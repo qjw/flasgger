@@ -27,6 +27,7 @@ swagger_doc_root = None
 doc_enable = True
 validate_enable = True
 custom_validators = None
+empty_value = None
 
 def get_path_from_doc(full_doc):
     swag_path = full_doc.replace('file:', '').strip()
@@ -385,15 +386,28 @@ class OutputView(MethodView):
 
 def customValidatorDispatch(validator, value, instance, schema):
     global custom_validators
-    if custom_validators is None: return
-
-    if value not in custom_validators:
+    if custom_validators is None or \
+                    value not in custom_validators:
         err = '{} is unknown, we only know about: {}'
         yield ValidationError(err.format(value, ', '.join(custom_validators.keys())))
     else:
         errors = custom_validators[value](validator, value, instance, schema)
         for error in errors:
             yield error
+
+
+def stripNone(data):
+    if empty_value is None : return data
+    if isinstance(data, dict):
+        return {k: stripNone(v) for k, v in data.items() if k is not None and v != empty_value}
+    elif isinstance(data, list):
+        return [stripNone(item) for item in data if item is not None]
+    elif isinstance(data, tuple):
+        return tuple(stripNone(item) for item in data if item is not None)
+    elif isinstance(data, set):
+        return {stripNone(item) for item in data if item is not None}
+    else:
+        return data
 
 class Swagger(object):
 
@@ -433,9 +447,11 @@ class Swagger(object):
         global doc_enable
         global validate_enable
         global custom_validators
+        global empty_value
         doc_enable = self.config.get('doc_enable',True)
         validate_enable = self.config.get('validate_enable',True)
         custom_validators = self.config.get('custom_validators',None)
+        empty_value = self.config.get('empty_value',None)
 
     def load_doc_root(self,app):
         if app is not None:

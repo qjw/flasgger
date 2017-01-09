@@ -43,7 +43,8 @@ app.config['SWAGGER'] = {
             "title": "Flasgger 结构文档",
             "description": "说些什么呢"
         },
-    "custom_validators":custom_validators
+    "custom_validators":custom_validators,
+    "empty_value":"__null__"
 }
 
 

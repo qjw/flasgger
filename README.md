@@ -239,7 +239,7 @@ SWAGGER = {
 ## 其他
 在flask中，query参数和form参数中所有的value都是string类型，若doc声明类型为[integer],flasgger内部会自动转换成int。最终的结果存放在
 
-1. json - request.json
+1. json - request.json_dict (老版本是request.json)
 2. formData/form - request.form_dict
 3. query - request.query_dict
 4. path - request.view_args
@@ -311,4 +311,35 @@ def handle_bad_request(e):
     if redirect_url is not None:
         return redirect(url_for(redirect_url))
     return make_response(jsonify(code=400, message=e.schema.get('error_tip','参数校验错误'),details=e.message), 200)
+```
+
+# 自动删除字段
+可以配置一个config字段**empty_value**，若字段存在，并且不为空，那么json中所有value和它相等的值会自动删除。
+
+这个需求为了方便前端在作参数拼装时，简化代码，但是会增加服务器负担
+
+# 自定义校验规则
+正则表达式是万能的规则，但相比一个有意义的字符串还是比较让人费解，另外的问题是，正则规则通常不只是一个地方用到，那么需要更新的时候可能要改很多地方，容易遗漏，当然用变量抽出来会好一些。
+
+```python
+def mobile_validator(validator, value, instance, schema):
+    patrn = "^1[3|4|5|7|8]\\d{9}$"
+    if (
+        validator.is_type(instance, "string") and
+        not re.search(patrn, instance)
+    ):
+        yield ValidationError("%r does not match %r" % (instance, patrn))
+
+custom_validators = {
+    'mobile': mobile_validator
+}
+```
+然后，将对象至于config的**custom_validators**字段即可。使用时，使用key【**customvalidator**】
+```xml
+"mobile": {
+    "type": "string",
+    "description": "手机号码",
+    "customvalidator": "mobile",
+    "error_tip":"请输入正确的客户手机1"
+}
 ```
