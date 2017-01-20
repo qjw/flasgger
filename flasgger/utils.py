@@ -131,6 +131,13 @@ def swag_from(filepath, filetype=None, endpoint=None, methods=None,validate_flag
             type = property.get('type',None)
             if type is None:
                 abort(500)
+
+            # 排除空值
+            value = rdict.get(name, None)
+            if value == '':
+                rdict.pop(name, None)
+                continue
+
             if type == 'integer':
                 value = rdict.get(name,None)
                 if value is None or isinstance(value, int):
@@ -155,10 +162,6 @@ def swag_from(filepath, filetype=None, endpoint=None, methods=None,validate_flag
                     return rdict
                 except ValueError as ve:
                     return rdict
-            elif type == 'string':
-                value = rdict.get(name, None)
-                if value == '' :
-                    rdict.pop(name, None)
 
         return rdict
 
