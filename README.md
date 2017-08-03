@@ -8,6 +8,9 @@ mistune>=0.7.3
 
 ## 定义文档
 原版本的flasgger使用yaml来编写文档，本项目改成json格式
+
+> yaml没有找到跨文件ref的方案
+
 ```json
 {
    "summary": "登陆",
@@ -310,7 +313,10 @@ def handle_bad_request(e):
     redirect_url = e.schema.get('redirect_url',None)
     if redirect_url is not None:
         return redirect(url_for(redirect_url))
-    return make_response(jsonify(code=400, message=e.schema.get('error_tip','参数校验错误'),details=e.message), 200)
+    return make_response(jsonify(code=400,
+                                 message=e.schema.get('error_tip', '参数校验错误'),
+                                 details=e.message,
+                                 schema=str(e.schema)), 200)
 ```
 
 # 自动删除字段
@@ -342,4 +348,57 @@ custom_validators = {
     "customvalidator": "mobile",
     "error_tip":"请输入正确的客户手机1"
 }
+```
+
+# json schema层面支持null
+``` json
+"created_at": {
+    "error": "fuck",
+    "anyOf": [
+        {
+            "type": "string",
+            "description": "创建时间",
+            "default": "2017-1-1 19:11:11",
+            "format": "date"
+        },
+        {
+            "type": "null"
+        }
+    ]
+}
+```
+
+## date-time
+默认情况下，string类型支持format:date，格式如[2017-8-3 19:35:43]，在<https://spacetelescope.github.io/understanding-json-schema/reference/string.html>有提到date-time，这种情况下，需要安装
+``` bash
+pip install strict_rfc3339
+```
+
+格式如【2017-04-13T14:34:23+00:00】
+
+或者 [pip install isodate] **优先级低于strict_rfc3339**
+
+格式如【2017-04-13T14:34】，也支持上述的格式
+
+完整的实现见
+``` python
+try:
+    import strict_rfc3339
+except ImportError:
+    try:
+        import isodate
+    except ImportError:
+        pass
+    else:
+        @_checks_drafts("date-time", raises=(ValueError, isodate.ISO8601Error))
+        def is_date(instance):
+            if not isinstance(instance, str_types):
+                return True
+            return isodate.parse_datetime(instance)
+else:
+        @_checks_drafts("date-time")
+        def is_date(instance):
+            if not isinstance(instance, str_types):
+                return True
+            return strict_rfc3339.validate_rfc3339(instance)
 ```
