@@ -345,7 +345,7 @@ custom_validators = {
 "mobile": {
     "type": "string",
     "description": "手机号码",
-    "customvalidator": "mobile",
+    "custom": "mobile",
     "error_tip":"请输入正确的客户手机1"
 }
 ```
@@ -402,3 +402,25 @@ else:
                 return True
             return strict_rfc3339.validate_rfc3339(instance)
 ```
+
+为了支持【2017-04-13 14:34:11】格式，系统自动注入了datetime标签
+``` json
+{
+    "type": "string",
+    "description": "创建时间",
+    "default": "2017-1-1 19:11:11",
+    "format": "datetime"
+}
+```
+
+另外也支持内置的自定义校验器
+``` json
+{
+    "type": "string",
+    "description": "创建时间",
+    "default": "2017-1-1 19:11:11",
+    "internal": "datetime"
+}
+```
+
+> 受限于jsonschema库的能力，若自定义校验器名字写错了（不存在）无法报错。实际逻辑是忽略错误

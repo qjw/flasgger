@@ -6,11 +6,11 @@ from flask import request,abort
 from functools import wraps
 
 from jsonschema import Draft4Validator
-from jsonschema import ValidationError, validate as _validate
 from jsonschema.validators import extend
 from werkzeug.datastructures import ImmutableMultiDict
 
-from .base import _extract_definitions, yaml, load_from_file,load_docstring, customValidatorDispatch, stripNone
+from .validator import internalValidatorDispatch
+from .base import _extract_definitions, yaml, load_from_file,load_docstring, stripNone, customValidatorDispatch
 from jsonschema import FormatChecker
 
 
@@ -227,7 +227,10 @@ def swag_from(filepath, filetype=None, endpoint=None, methods=None,validate_flag
         def wrapper(*args, **kwargs):
             validate_instance = getattr(function, 'validate_instance', None)
             if validate_instance is None:
-                customValidator = extend(Draft4Validator, {'customvalidator': customValidatorDispatch}, 'FlasggerSchema')
+                customValidator = extend(Draft4Validator, {
+                    'custom': customValidatorDispatch,
+                    'internal': internalValidatorDispatch
+                }, 'FlasggerSchema')
                 function.validate_instance = customValidator
                 validate_instance = customValidator
 

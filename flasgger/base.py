@@ -6,8 +6,8 @@ If a swagger yaml description is found in the docstrings for an endpoint
 we add the endpoint to swagger specification output
 
 """
-import inspect
-import yaml,json
+
+import yaml
 import re
 import os,sys
 import jsonref
@@ -100,7 +100,7 @@ def load_docstring(swag_path,swag_type,swag_subpath,root):
 
             return swag
         except Exception as e:
-            return None
+            raise e
     return None
 
 def _parse_docstring(obj, process_doc, endpoint=None, verb=None, root=None):
@@ -383,7 +383,7 @@ class OutputView(MethodView):
                 paths[rule].update(operations)
         return jsonify(data)
 
-
+# 外部传入的validator
 def customValidatorDispatch(validator, value, instance, schema):
     global custom_validators
     if custom_validators is None or \
@@ -394,7 +394,6 @@ def customValidatorDispatch(validator, value, instance, schema):
         errors = custom_validators[value](validator, value, instance, schema)
         for error in errors:
             yield error
-
 
 def stripNone(data):
     if empty_value is None : return data
