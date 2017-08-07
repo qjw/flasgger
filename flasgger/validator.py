@@ -23,8 +23,19 @@ def datetime_validator(validator, value, instance, schema):
     except ValueError:
         yield ValidationError("Incorrect datatime format, should be YYYY-MM-DD HH:mm:SS")
 
+def re_validator_maker(pattern):
+    def re_validator(validator, value, instance, schema):
+        if (
+                    validator.is_type(instance, "string") and
+                    not re.search(pattern, instance)
+        ):
+            yield ValidationError("%r does not match %r" % (instance, pattern))
+
+    return re_validator
+
 # 内部的校验器
 internal_validators = {
+    "mobile": re_validator_maker("(^(\\d{3,4}-)?\\d{7,8})$|\\d{12}|^\\d{3}-?\\d{4}-?\\d{4}$"),
     "datetime": datetime_validator
 }
 

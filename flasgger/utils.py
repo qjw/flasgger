@@ -162,7 +162,22 @@ def swag_from(filepath, filetype=None, endpoint=None, methods=None,validate_flag
                     return rdict
                 except ValueError as ve:
                     return rdict
-
+            elif type == 'boolean':
+                value = rdict.get(name, None)
+                if value is None or isinstance(value, bool):
+                    continue
+                try:
+                    if value == "true":
+                        value_bool = True
+                    elif value == "false":
+                        value_bool = False
+                    else:
+                        return dict
+                    rdict[name] = value_bool
+                except TypeError as te:
+                    return rdict
+                except ValueError as ve:
+                    return rdict
         return rdict
 
 
