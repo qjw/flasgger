@@ -6,8 +6,9 @@ from jsonschema._format import _checks_drafts
 
 @_checks_drafts("datetime")
 def is_email(instance):
+    # 可能有多种类型 type: ["string","null"]
     if not isinstance(instance, str):
-        return False
+        return True
     try:
         datetime.strptime(instance, '%Y-%m-%d %H:%M:%S')
         return True

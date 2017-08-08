@@ -367,6 +367,17 @@ custom_validators = {
     ]
 }
 ```
+最终方法使用所有类型，不过swagger-ui无法设置显示正确的类型，取而代之的是一个{}，一种变通的办法是
+``` json
+"name": {
+    "type": ["string","null"],
+    "description": "客户名称",
+    "default": "张三",
+    "minLength": 1,
+    "maxLength": 20
+}
+```
+
 
 ## date-time
 默认情况下，string类型支持format:date，格式如[2017-8-3 19:35:43]，在<https://spacetelescope.github.io/understanding-json-schema/reference/string.html>有提到date-time，这种情况下，需要安装
