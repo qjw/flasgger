@@ -1,15 +1,19 @@
-## 依赖
+## 运行Sample
 ```
-jsonschema==2.5.1
-PyYAML>=3.0
-jsonref>=0.1
-mistune>=0.7.3
+virtualenv -p python3 venv
+. venv/bin/activate
+pip install -r requirements.txt
+cd sample
+python main.py
 ```
+访问<http://127.0.0.1:5000/doc>即可测试
 
 ## 定义文档
 原版本的flasgger使用yaml来编写文档，本项目改成json格式
 
 > yaml没有找到跨文件ref的方案
+
+下面是一个简单的**json schema**
 
 ```json
 {
@@ -57,10 +61,12 @@ mistune>=0.7.3
 }
 ```
 
-#### parameters
+### parameters
+
 支持query参数，path参数，json格式和普通的form。在GET方法中提交form不支持[swagger ui不支持，没去查]
 
-json格式的in为body，里面有一个对当前文件的引用$ref
+json格式的in为body，下面的schema存在一个对当前文件[**#definitions/update**]的引用
+
 ```json
 [
     {
@@ -109,14 +115,17 @@ json格式的in为body，里面有一个对当前文件的引用$ref
 ]
 ```
 
-#### 引用
-为了避免过多的重复定义，json支持**$ref引用**，本项目做了大量工作，以对此做很好的支持
+
+### 引用
+
+为了减少代码重复，提高json定义的复用程度，json支持**$ref引用**，为了支持跨文件引用，本项目做了大量优化。
 
 在全局配置中定义一个**doc_root**的变量，用来指定存放json文档的根目录，可以使用**绝对路径，这方便多个工程共享**json文档，也可以使用**相对路径**，相对路径基于**app.root_path**
 
 例如下面的定义，其中**file:**前缀不可省略，该路径表示引用**doc_root**目录下的文件definitions.json的【子key】 car_lite，而不是和它相同的目录的文件。
 
 记住：**所有的$ref**路径都基于**doc_root**定义。
+
 ```json
 {
     "summary": "设置默认车辆",
@@ -145,8 +154,10 @@ json格式的in为body，里面有一个对当前文件的引用$ref
 ```
 
 ## 配置
+
 ```python
-    SWAGGER = {
+Config = {
+    SWAGGER: {
         "doc_root": '../doc/json',
         "base_url": "/api/v1",
         "info":
@@ -157,19 +168,34 @@ json格式的in为body，里面有一个对当前文件的引用$ref
             }
         },
         "url_prefix": "apidoc"
+}
+```
+``` python
+app = Flask(__name__)
+app.config.update(Config or {})
 ```
 
-#### doc_root
+### doc_root
 定义文档根目录，可以相对路径或者绝对路径，相对路径基于**app.root_path**
 
-#### base_url
+### base_url
 定义所有api的base地址，通常都会以诸如**/api/v1**之类的开头，定义本变量的好处在于，swagger文档页不会显示这个前缀，例如接口/api/v1/me/default会显示/me/default，但是提交时，会自动附上base_url已确保提交测试的正确。
 
-#### info
+### info
 版本，标题和描述
 
-#### url_prefix
+### url_prefix
 默认是doc，用来定义swagger ui的定义，例如api的地址是<http://www.example.com/api/v1/me/default>,那么swagger ui的地址是<http://www.example.com/doc>，为了避免和已有的api url冲突，可以通过本变量修改url
+
+### custom_headers
+自定义的全局header，参考<https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md#securityDefinitionsObject>
+
+```
+"custom_headers": [
+   "api_key1",
+   "api_key2",
+],
+```
 
 ## 代码使用
 初始化，留意**Swagger(app)**
@@ -183,6 +209,9 @@ def create_app(env):
 ```
 
 添加注解，注入具体的API，留意**swag_from**
+
+> 跨文件引用，限定只能ref根级，例如[**customer_solicittion/car.json#/car**]，car section就是根节点的key，不支持类似[**customer_solicittion/car.json#/car/type**]之类的引用。
+
 ```python
 @api.route('/car/<int:id>')
 @swag_from('customer_solicittion/car.json#/car')
@@ -190,25 +219,32 @@ def get_car(id):
     return jsonify(code=0, message='ok', data={})
 ```
 
-#### 校验
-定义全局错误处理函数，留意**handle_bad_request**
-```python
-def create_app(env):
-    app = Flask(__name__)
-    conf = config.of_env(env)
-    conf.init_app(app)
-    app.config.from_object(conf)
-    Swagger(app)
+### 不做校验
+swag_from注解添加【**validate_flag=False**】参数即可禁用校验，只保留doc
 
-    #     return resp
-    @app.errorhandler(jsonschema.ValidationError)
-    def handle_bad_request(e):
-        return make_response(jsonify(code=400,
-        	message='参数校验错误',details=e.message), 200)
-    return app
+```
+@api.route('/14', methods=['GET'])
+@swag_from('api.json#/14',validate_flag=False)
+def f14():
+    return jsonify(code=0, message='ok')
 ```
 
-#### 文档和校验配置
+### 校验错误处理
+定义全局错误处理函数，留意**handle_bad_request**
+
+> schema可以定义key为**error**的string字段，用于自定义错误输出
+为了方便调试，开发环境建议将**schema打印出来**
+
+```python
+@app.errorhandler(jsonschema.ValidationError)
+def handle_bad_request(e):
+  return make_response(jsonify(code=400,
+                               message=e.schema.get('error', '参数校验错误'),
+                               details=e.message,
+                               schema=str(e.schema)), 200)
+```
+
+### 文档和校验配置
 默认开启文档和校验，可以通过全局和局部配置修改选项
 
 swag_from参数validate_flag可以单独关闭api的自动校验
@@ -235,11 +271,12 @@ SWAGGER = {
 
 若swag_from注解配置了validate_flag选项，则根据选项来开启/关闭校验
 
-原flasgger有一个工具类注解**validate**，本项目并未用到，在选项开启的情况下，只要添加了swag_from就自动赋予了校验规则，若校验失败会抛出异常**jsonschema.ValidationError**。
+原flasgger有一个工具类注解**validate**，本项目并未用到所以代码已经删除，在选项开启的情况下，只要添加了swag_from就自动赋予了校验规则，若校验失败会抛出异常**jsonschema.ValidationError**。
 
-本项目使用**jsonschema**做校验，理论上前者支持的规则，这里都能支持。
+本项目使用 **[jsonschema](https://pypi.python.org/pypi/jsonschema)** 做校验，理论上前者支持的规则，这里都能支持。
 
 ## 其他
+
 在flask中，query参数和form参数中所有的value都是string类型，若doc声明类型为[integer],flasgger内部会自动转换成int。最终的结果存放在
 
 1. json - request.json_dict (老版本是request.json)
@@ -281,6 +318,8 @@ swag_from注解可以关联一个文件，或者文件的某一个key。但是�
 
 # 自定义错误提示
 
+> 留意error key的字段以及**handle_bad_request**处理函数
+
 ```json
 {
     "in": "body",
@@ -294,7 +333,7 @@ swag_from注解可以关联一个文件，或者文件的某一个key。但是�
                 "type": "string",
                 "description": "需要修改的内容",
                 "maxLength": 140,
-                "error_tip": "限140字"
+                "error": "限140字"
             }
         },
         "required":[
@@ -309,14 +348,10 @@ swag_from注解可以关联一个文件，或者文件的某一个key。但是�
 ```python
 @app.errorhandler(jsonschema.ValidationError)
 def handle_bad_request(e):
-    flash(e.schema.get('error_tip',e.message))
-    redirect_url = e.schema.get('redirect_url',None)
-    if redirect_url is not None:
-        return redirect(url_for(redirect_url))
-    return make_response(jsonify(code=400,
-                                 message=e.schema.get('error_tip', '参数校验错误'),
-                                 details=e.message,
-                                 schema=str(e.schema)), 200)
+  return make_response(jsonify(code=400,
+                               message=e.schema.get('error', '参数校验错误'),
+                               details=e.message,
+                               schema=str(e.schema)), 200)
 ```
 
 # 自动删除字段
@@ -325,7 +360,7 @@ def handle_bad_request(e):
 这个需求为了方便前端在作参数拼装时，简化代码，但是会增加服务器负担
 
 # 自定义校验规则
-正则表达式是万能的规则，但相比一个有意义的字符串还是比较让人费解，另外的问题是，正则规则通常不只是一个地方用到，那么需要更新的时候可能要改很多地方，容易遗漏，当然用变量抽出来会好一些。
+正则表达式是万能的规则，但相比一个让人印象深刻的名称，正则表达式还是比较让人费解。另外的问题是，正则规则通常不只是一个地方用到，那么需要更新的时候可能要改很多地方，容易遗漏，*当然用变量抽出来会好一些*。
 
 ```python
 def mobile_validator(validator, value, instance, schema):
@@ -340,7 +375,9 @@ custom_validators = {
     'mobile': mobile_validator
 }
 ```
+
 然后，将对象至于config的**custom_validators**字段即可。使用时，使用key【**customvalidator**】
+
 ```xml
 "mobile": {
     "type": "string",
@@ -367,7 +404,9 @@ custom_validators = {
     ]
 }
 ```
+
 最终方法使用所有类型，不过swagger-ui无法设置显示正确的类型，取而代之的是一个{}，一种变通的办法是
+
 ``` json
 "name": {
     "type": ["string","null"],
@@ -380,6 +419,7 @@ custom_validators = {
 
 
 ## date-time
+
 默认情况下，string类型支持format:date，格式如[2017-8-3 19:35:43]，在<https://spacetelescope.github.io/understanding-json-schema/reference/string.html>有提到date-time，这种情况下，需要安装
 ``` bash
 pip install strict_rfc3339
@@ -392,6 +432,7 @@ pip install strict_rfc3339
 格式如【2017-04-13T14:34】，也支持上述的格式
 
 完整的实现见
+
 ``` python
 try:
     import strict_rfc3339
@@ -415,6 +456,7 @@ else:
 ```
 
 为了支持【2017-04-13 14:34:11】格式，系统自动注入了datetime标签
+
 ``` json
 {
     "type": "string",
@@ -425,6 +467,7 @@ else:
 ```
 
 另外也支持内置的自定义校验器
+
 ``` json
 {
     "type": "string",

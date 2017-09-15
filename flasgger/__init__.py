@@ -6,4 +6,4 @@ __email__ = 'rochacbruno@gmail.com'
 
 from jsonschema import ValidationError  # noqa
 from .base import Swagger, NO_SANITIZER, BR_SANITIZER, MK_SANITIZER  # noqa
-from .utils import swag_from, validate  # noqa
+from .utils import swag_from  # noqa

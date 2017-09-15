@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 
 from jsonschema import ValidationError
@@ -36,8 +37,9 @@ def re_validator_maker(pattern):
 
 # 内部的校验器
 internal_validators = {
+    "datetime": datetime_validator,
     "mobile": re_validator_maker("(^(\\d{3,4}-)?\\d{7,8})$|\\d{12}|^\\d{3}-?\\d{4}-?\\d{4}$"),
-    "datetime": datetime_validator
+    "plate": re_validator_maker("^[\\u4e00-\\u9fa5]{1}[A-Za-z]{1}[A-Za-z0-9]{4}[A-Za-z0-9\\u4e00-\\u9fa5]{1}$")
 }
 
 # 内置传入的validator

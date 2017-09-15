@@ -24,11 +24,6 @@ def swag_from(filepath, filetype=None, endpoint=None, methods=None,validate_flag
     """
 
     def resolve_path(function, filepath):
-        # if not filepath.startswith('/'):
-        #     if not hasattr(function, 'root_path'):
-        #         function.root_path = os.path.dirname(
-        #             function.__globals__['__file__'])
-        #     return os.path.join(function.root_path, filepath)
         return filepath
 
     def load_validate_schema(function,schema):
@@ -54,13 +49,17 @@ def swag_from(filepath, filetype=None, endpoint=None, methods=None,validate_flag
                             item_type is None:
                 continue
 
+            required = item.get('required', False)
             # json 校验
             if item_type == 'body':
                 swag_param_body = item.get('schema', None)
+
+                # 不存在（默认）是false
+                if not required and isinstance(swag_param_body["type"], str):
+                    swag_param_body["type"] = [swag_param_body["type"],"null"]
                 if swag_param_body is not None:
                     function.swag_param_body = swag_param_body
             elif item_type == 'query':
-                required = item.get('required',False)
                 if not isinstance(required,bool):
                     continue
 
@@ -71,7 +70,6 @@ def swag_from(filepath, filetype=None, endpoint=None, methods=None,validate_flag
                 if required:
                     swag_param_query_required.append(item_name)
             elif item_type == 'path':
-                required = item.get('required',False)
                 if not isinstance(required,bool):
                     continue
 
@@ -82,7 +80,6 @@ def swag_from(filepath, filetype=None, endpoint=None, methods=None,validate_flag
                 if required:
                     swag_param_path_required.append(item_name)
             elif item_type == 'formData':
-                required = item.get('required',False)
                 if not isinstance(required,bool):
                     continue
 
@@ -118,9 +115,12 @@ def swag_from(filepath, filetype=None, endpoint=None, methods=None,validate_flag
                 function.swag_param_formdata['required'] = swag_param_formdata_required
 
     def translate_string_data(schema,data):
-        if not isinstance(data,ImmutableMultiDict):
+        if isinstance(data,ImmutableMultiDict):
+            rdict = data.to_dict(flat=True)
+        elif isinstance(data,dict):
+            rdict = data
+        else:
             abort(500)
-        rdict = data.to_dict(flat=True)
 
         properties = schema.get('properties',None)
         if not isinstance(properties,dict):
@@ -134,7 +134,7 @@ def swag_from(filepath, filetype=None, endpoint=None, methods=None,validate_flag
 
             # 排除空值
             value = rdict.get(name, None)
-            if value == '':
+            if value is None or value == '':
                 rdict.pop(name, None)
                 continue
 
@@ -202,8 +202,6 @@ def swag_from(filepath, filetype=None, endpoint=None, methods=None,validate_flag
             length = - (len(function.swag_subpath) + 2)
             final_filepath = final_filepath[0:length]
 
-
-
         function.swag_type = filetype or final_filepath.split('.')[-1]
 
         if function.swag_type not in ('yaml', 'yml', 'json'):
@@ -234,9 +232,6 @@ def swag_from(filepath, filetype=None, endpoint=None, methods=None,validate_flag
                                   function.swag_subpath,
                                   swagger_doc_root)
             load_validate_schema(function,swag)
-
-
-
 
         @wraps(function)
         def wrapper(*args, **kwargs):
@@ -274,8 +269,8 @@ def swag_from(filepath, filetype=None, endpoint=None, methods=None,validate_flag
 
             swag_param_path = getattr(function, 'swag_param_path', None)
             if swag_param_path is not None:
-                # _validate(request.view_args, swag_param_path, format_checker=FormatChecker())
-                validate_instance(swag_param_path, format_checker=FormatChecker()).validate(request.view_args)
+                data = translate_string_data(swag_param_path,request.view_args)
+                validate_instance(swag_param_path, format_checker=FormatChecker()).validate(data)
 
             swag_param_formdata = getattr(function, 'swag_param_formdata', None)
             request.form_dict = {}
@@ -290,49 +285,3 @@ def swag_from(filepath, filetype=None, endpoint=None, methods=None,validate_flag
             return function(*args, **kwargs)
         return wrapper
     return decorator
-
-
-def validate(data, schema_id, filepath, root=None):
-    """
-    This method is available to use YAML swagger definitions file
-    to validate data against its jsonschema.
-    example:
-    validate({"item": 1}, 'item_schema', 'defs.yml', root=__file__)
-    If root is not defined it will try to use absolute import so path
-    should start with /
-    """
-
-    endpoint = request.endpoint.lower().replace('.', '_')
-    verb = request.method.lower()
-
-    full_schema = "{}_{}_{}".format(endpoint, verb, schema_id)
-
-    if not filepath.startswith('/'):
-        final_filepath = os.path.join(os.path.dirname(root), filepath)
-    else:
-        final_filepath = filepath
-    full_doc = load_from_file(final_filepath)
-    yaml_start = full_doc.find('---')
-    swag = yaml.load(full_doc[yaml_start if yaml_start >= 0 else 0:])
-    params = [
-        item for item in swag.get('parameters', [])
-        if item.get('schema')
-    ]
-
-    definitions = {}
-    main_def = {}
-    raw_definitions = _extract_definitions(
-        params, endpoint=endpoint, verb=verb)
-
-    for defi in raw_definitions:
-        if defi['id'] in [schema_id, full_schema]:
-            main_def = defi.copy()
-        else:
-            definitions[defi['id']] = defi
-
-    main_def['definitions'] = definitions
-
-    for key, value in definitions.items():
-        del value['id']
-
-    jsonschema.validate(data, main_def)

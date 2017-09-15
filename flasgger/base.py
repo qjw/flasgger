@@ -28,6 +28,7 @@ doc_enable = True
 validate_enable = True
 custom_validators = None
 empty_value = None
+output_json = None
 
 def get_path_from_doc(full_doc):
     swag_path = full_doc.replace('file:', '').strip()
@@ -55,14 +56,6 @@ def load_from_file(swag_path, swag_type='yml', root=None):
             swag_path = os.path.join(root, swag_path)
         return open(swag_path).read()
 
-    # :
-    # with open(swag_path) as swag_file:
-    #     content = swag_file.read()
-    #     if swag_type in ('yaml', 'yml'):
-    #         return content
-    #     elif swag_type  == 'json':
-    #         return json_to_yaml(content)
-
 def load_docstring(swag_path,swag_type,swag_subpath,root):
     full_doc = None
     if swag_path is None or swag_type is None:
@@ -70,13 +63,6 @@ def load_docstring(swag_path,swag_type,swag_subpath,root):
 
     if swag_path is not None:
         full_doc = load_from_file(swag_path, swag_type,root=root)
-    # elif swag_paths is not None:
-    #     for key in ("{}_{}".format(endpoint, verb), endpoint, verb.lower()):
-    #         if key in swag_paths:
-    #             full_doc = load_from_file(swag_paths[key], swag_type,root=root)
-    #             break
-    # else:
-    #     full_doc = inspect.getdoc(obj)
     else:
         return None
 
@@ -120,46 +106,6 @@ def _parse_docstring(obj, process_doc, endpoint=None, verb=None, root=None):
     swag.pop("summary", None)
     swag.pop("description", None)
     return summary,description,swag
-    #
-    # if swag_path is not None:
-    #     full_doc = load_from_file(swag_path, swag_type,root=root)
-    # elif swag_paths is not None:
-    #     for key in ("{}_{}".format(endpoint, verb), endpoint, verb.lower()):
-    #         if key in swag_paths:
-    #             full_doc = load_from_file(swag_paths[key], swag_type,root=root)
-    #             break
-    # else:
-    #     full_doc = inspect.getdoc(obj)
-    #
-    # if full_doc:
-    #
-    #     if full_doc.startswith('file:'):
-    #         full_doc = load_from_file(*get_path_from_doc(full_doc))
-    #
-    #
-    #     try:
-    #         swag = None
-    #         if swag_type == 'yml':
-    #             swag = yaml.load(full_doc)
-    #         elif swag_type == 'json':
-    #             if root is None:
-    #                 swag = jsonref.loads(full_doc,
-    #                                      base_uri='file:' + os.path.dirname(sys.modules['__main__'].__file__) + '/')
-    #             else:
-    #                 swag = jsonref.loads(full_doc,base_uri='file:' + root)
-    #
-    #         if swag_subpath is not None:
-    #             swag = swag.get(swag_subpath,None)
-    #
-    #         summary = swag.get('summary','')
-    #         description = swag.get('description','')
-    #         swag.pop("summary", None)
-    #         swag.pop("description", None)
-    #         return summary,description,swag
-    #     except Exception as e:
-    #         return '', '', None
-    #
-    # return '', '', None
 
 
 def _extract_definitions(alist, level=None, endpoint=None, verb=None):
@@ -274,7 +220,21 @@ class OutputView(MethodView):
         return app_rules
 
     def get(self):
+        global output_json
+        if output_json:
+            return jsonify(output_json)
         base_url = self.config.get('base_url',None)
+
+        securityDefinitions = {}
+        custom_headers = self.config.get('custom_headers',None)
+        if custom_headers and isinstance(custom_headers, list):
+            for item in custom_headers:
+                securityDefinitions[item] = {
+                    "type": "apiKey",
+                    "in": "header",
+                    "name": item
+                }
+
         data = {
             "swagger": self.config.get('swagger_version', "2.0"),
             "basePath": self.config.get('base_url',"/"),
@@ -283,6 +243,7 @@ class OutputView(MethodView):
                 "title": self.info.get('title', "A swagger API"),
                 "description": self.info.get('description',"API description")
             },
+            "securityDefinitions": securityDefinitions,
             "paths": defaultdict(dict),
             "definitions": defaultdict(dict)
         }
@@ -381,6 +342,7 @@ class OutputView(MethodView):
                 for arg in re.findall('(<([^<>]*:)?([^<>]*)>)', rule):
                     rule = rule.replace(arg[0], '{%s}' % arg[2])
                 paths[rule].update(operations)
+        output_json = data
         return jsonify(data)
 
 # 外部传入的validator

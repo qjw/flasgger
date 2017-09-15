@@ -6,27 +6,22 @@
         "properties": {
             "brand": {
                 "type": "string",
-                "description": "汽车品牌"
+                "description": "汽车品牌",
+                "default": "奔驰"
             },
             "series": {
                 "type": "string",
-                "description": "汽车系列"
+                "description": "汽车系列",
+                "default": "S600"
             },
             "model": {
                 "type": "string",
-                "description": "汽车型号"
-            },
-            "model_id": {
-                "type": "integer",
-                "description": "汽车型号_id"
-            },
-            "image_url": {
-                "type": "string",
-                "description": "汽车logo"
+                "description": "汽车型号",
+                "default": "尊贵型"
             }
         },
         "required": [
-            "model_id"
+            "brand"
         ]
     }
 }
