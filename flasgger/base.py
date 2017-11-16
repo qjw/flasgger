@@ -11,6 +11,7 @@ import yaml
 import re
 import os,sys
 import jsonref
+import codecs
 
 from collections import defaultdict
 from flask import jsonify, Blueprint, url_for, current_app, Markup, request
@@ -48,7 +49,7 @@ def load_from_file(swag_path, swag_type='yml', root=None):
         raise AttributeError("Currently only yaml or yml or json supported")
 
     try:
-        return open(swag_path).read()
+        return open(swag_path,encoding="utf8").read()
     except IOError:
         if root is None:
             swag_path = os.path.join(os.path.dirname(__file__), swag_path)
