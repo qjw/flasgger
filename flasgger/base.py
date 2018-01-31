@@ -6,6 +6,8 @@ If a swagger yaml description is found in the docstrings for an endpoint
 we add the endpoint to swagger specification output
 
 """
+import copy
+import threading
 
 import yaml
 import re
@@ -57,13 +59,32 @@ def load_from_file(swag_path, swag_type='yml', root=None):
             swag_path = os.path.join(root, swag_path)
         return open(swag_path).read()
 
+
+load_docstring_cache = {}
 def load_docstring(swag_path,swag_type,swag_subpath,root):
+    global load_docstring_cache
     full_doc = None
     if swag_path is None or swag_type is None:
         return None
 
     if swag_path is not None:
-        full_doc = load_from_file(swag_path, swag_type,root=root)
+        full_doc = load_docstring_cache.get(swag_path)
+        if full_doc:
+            # 已经cache过了
+            if full_doc['parse']:
+                # 已经parse过@ref
+                swag = full_doc['swag'].get(swag_subpath,None)
+                if swag:
+                    return copy.deepcopy(swag)
+                else:
+                    return None
+            else:
+                # 没有parse过，继续parse
+                full_doc = full_doc['swag']
+        else:
+            # load from file
+            full_doc = load_from_file(swag_path, swag_type,root=root)
+            load_docstring_cache[swag_path] = {'parse': False,'swag': full_doc}
     else:
         return None
 
@@ -71,21 +92,27 @@ def load_docstring(swag_path,swag_type,swag_subpath,root):
 
         if full_doc.startswith('file:'):
             full_doc = load_from_file(*get_path_from_doc(full_doc))
+            load_docstring_cache[swag_path] = {'parse': False, 'swag': full_doc}
         try:
-            swag = None
             if swag_type == 'yml':
                 swag = yaml.load(full_doc)
+                load_docstring_cache[swag_path] = {'parse': True,'swag': swag}
             elif swag_type == 'json':
                 if root is None:
                     swag = jsonref.loads(full_doc,
                                          base_uri='file:' + os.path.dirname(sys.modules['__main__'].__file__) + '/')
+                    load_docstring_cache[swag_path] = {'parse': True, 'swag': swag}
                 else:
                     swag = jsonref.loads(full_doc,base_uri='file:' + root)
+                    load_docstring_cache[swag_path] = {'parse': True, 'swag': swag}
+            else:
+                return None
 
             if swag_subpath is not None:
                 swag = swag.get(swag_subpath,None)
+                if swag:
+                    return copy.deepcopy(swag)
 
-            return swag
         except Exception as e:
             raise e
     return None
@@ -202,6 +229,9 @@ def is_valid_dispatch_view(endpoint):
 
 
 class OutputView(MethodView):
+    schema = None
+    lock = threading.Lock()
+
     def __init__(self, *args, **kwargs):
         view_args = kwargs.pop('view_args', {})
         self.config = view_args.get('config')
@@ -221,9 +251,22 @@ class OutputView(MethodView):
         return app_rules
 
     def get(self):
-        global output_json
-        if output_json:
-            return jsonify(output_json)
+        if OutputView.schema:
+            return OutputView.schema
+
+        OutputView.lock.acquire()
+        try:
+            if OutputView.schema:
+                return OutputView.schema
+
+            OutputView.schema = self.getImp()
+        finally:
+            OutputView.lock.release()
+
+        return OutputView.schema
+
+    def getImp(self):
+
         base_url = self.config.get('base_url',None)
 
         securityDefinitions = {}
@@ -286,9 +329,9 @@ class OutputView(MethodView):
                     methods[verb.lower()] = endpoint
             operations = dict()
             for verb, method in methods.items():
-                klass = method.__dict__.get('view_class', None)
-                if klass and hasattr(klass, 'dispatch_request'):
-                    method = klass.__dict__.get('dispatch_request')
+                # klass = method.__dict__.get('view_class', None)
+                # if klass and hasattr(klass, 'dispatch_request'):
+                #     method = klass.__dict__.get('dispatch_request')
                 if verb is None or method is None:
                     continue
 
@@ -343,7 +386,6 @@ class OutputView(MethodView):
                 for arg in re.findall('(<([^<>]*:)?([^<>]*)>)', rule):
                     rule = rule.replace(arg[0], '{%s}' % arg[2])
                 paths[rule].update(operations)
-        output_json = data
         return jsonify(data)
 
 # 外部传入的validator
