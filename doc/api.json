@@ -197,7 +197,21 @@
                                     "description": "是否已设置默认"
                                 },
                                 "contact": {
-                                    "$ref": "file:definitions.json#/car_model"
+                                    "allOf": [
+                                        {
+                                            "$ref": "file:definitions.json#/car_model"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "extra": {
+                                                    "type": "string",
+                                                    "description": "额外合并的",
+                                                    "default": "随便"
+                                                }
+                                            }
+                                        }
+                                    ]
                                 }
                             }
                         }

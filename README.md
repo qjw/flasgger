@@ -417,6 +417,48 @@ custom_validators = {
 }
 ```
 
+## 合并对象
+``` json
+"data": {
+    "type": "object",
+    "properties": {
+        "default": {
+            "type": "boolean",
+            "description": "是否已设置默认"
+        },
+        "contact": {
+            "allOf": [
+                {
+                    "$ref": "file:definitions.json#/car_model"
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "extra": {
+                            "type": "string",
+                            "description": "额外合并的",
+                            "default": "随便"
+                        }
+                    }
+                }
+            ]
+        }
+    }
+}
+```
+
+最终的结果是
+``` json
+{
+    "contact": {
+      "brand": "奔驰",
+      "model": "尊贵型",
+      "series": "S600",
+      "extra": "随便"
+    }
+}
+```
+
 
 ## date-time
 
